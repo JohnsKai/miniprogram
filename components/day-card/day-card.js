@@ -99,7 +99,6 @@ Component({
 
     onTrackTap(e) {
       const { track } = e.currentTarget.dataset
-      console.log('[day-card track]', track)
       // TODO: 接入埋点 SDK
     },
 

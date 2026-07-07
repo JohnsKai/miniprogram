@@ -7,7 +7,10 @@ const TAG = 'travel-planner'
 function isEnabled() {
   try {
     const app = getApp()
-    if (app && app.globalData && app.globalData.debugLog === false) return false
+    if (app && app.globalData) {
+      if (app.globalData.ENV !== 'dev') return false
+      if (app.globalData.debugLog === false) return false
+    }
   } catch (e) { /* ignore */ }
   return true
 }
@@ -41,9 +44,6 @@ function log(tag, message, extra) {
 function logPlanResponse(userId, text) {
   const body = text || ''
   log('plan', `plan 完成 userId=${userId}, 响应长度=${body.length}, 响应预览=${preview(body, 400)}`)
-  if (body.length > 400) {
-    console.log(`[${timestamp()}] [${TAG}/plan] userId=${userId} 完整响应:\n`, body)
-  }
 }
 
 function logParseResult(userId, rawPreview, days, summary) {

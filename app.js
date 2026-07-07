@@ -3,6 +3,7 @@ App({
     ENV: 'dev',
     DEV_LAN_HOST: 'localhost',
     DEV_SERVICE_PORT: 8081,
+    debugLog: true,
     openId: '',
     userId: '',
     activeSessionId: '',

@@ -3,12 +3,27 @@
  */
 
 const PROD_BASE_URL = 'https://api.example.com'
-const DEFAULT_DEV_LAN_HOST = '192.168.1.100'
+const DEFAULT_DEV_LAN_HOST = 'localhost'
 
 let _loginPromise = null
 
 function getAppInstance() {
   return getApp()
+}
+
+function isDevLogging() {
+  try {
+    const app = getAppInstance()
+    if (!app || !app.globalData) return false
+    if (app.globalData.ENV !== 'dev') return false
+    return app.globalData.debugLog !== false
+  } catch (e) {
+    return false
+  }
+}
+
+function devLog(...args) {
+  if (isDevLogging()) console.log(...args)
 }
 
 function getServicePort() {
@@ -64,7 +79,7 @@ function request(options) {
       ? { 'Content-Type': 'application/json', ...(header || {}) }
       : buildHeaders(header)
 
-    console.log(`[api] ${method} ${fullUrl}`, data || '')
+    devLog(`[api] ${method} ${fullUrl}`)
 
     wx.request({
       url: fullUrl,

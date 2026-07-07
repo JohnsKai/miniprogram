@@ -2798,7 +2798,7 @@ Page({
           return
         }
         if (res.statusCode !== 200 || !res.data) return
-        logger.log('ask-query', `userId=${userId}, status=${res.statusCode}, body=${JSON.stringify(res.data).slice(0, 300)}`)
+        logger.log('ask-query', `sessionId=${sessionId}, status=${res.statusCode}, hasQuestion=${!!(res.data && res.data.hasQuestion)}`)
         const parsed = this.parseAskPayload(res.data)
         if (parsed.traceId) {
           this.applyServerTraceId(parsed.traceId)

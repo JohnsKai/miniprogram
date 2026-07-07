@@ -4,9 +4,8 @@
 
 微信原生小程序（**无 npm**），品牌名 **「灵途」**，对接后端 AI 服务，完成：**表单采集偏好 → 多轮聊天规划 → 结构化行程展示 → 规划后对话调整**。
 
-- **路径**：`/Users/kai/workspace/miniprogram`
 - **基础库**：3.3.4
-- **规模**：约 58 个源码文件（不含 `.idea`）
+- **AppID**：见 `project.config.json`（公开标识，非密钥）
 - **设计参考**：Figma Make — 旅行APP设计
 
 ---
@@ -15,9 +14,9 @@
 
 | 页面 | 路径 | 作用 |
 |------|------|------|
-| 规划 | `pages/index/index` | Tab 首页。旅行表单（目的地、天数、风格、预算等），提交后 `navigateTo` planning |
+| 规划 | `pages/index/index` | Tab 首页。ADR-08 表单（目的地必填 + 天数可选），可选「更多标签」预填 tripProfile |
 | 我的 | `pages/mine/mine` | Tab 页。个人区、历史方案、收藏路线、设置入口；支持微信登录与云端同步 |
-| 聊天规划 | `pages/planning/planning` | **核心页**（~1700 行 JS）。聊天 UI、SSE 流式、追问轮询、侧栏历史、断线重连、规划后对话 |
+| 聊天规划 | `pages/planning/planning` | **核心页**。聊天 UI、SSE 流式、INTAKE 追问、侧栏历史、断线重连、规划后对话 |
 | 结果 | `pages/result/result` | 结构化行程独立展示（summary + day-card），可从 globalData 或 `/plan/result` 加载 |
 | sessions | `pages/sessions/sessions` | 兼容入口，仅 redirect 到 planning |
 
@@ -186,17 +185,19 @@ index 填表 → planning（createSession + POST /plan 流式）
 ```javascript
 // app.js globalData
 {
-  ENV: 'dev',
-  DEV_LAN_HOST: 'localhost',   // 真机调试改局域网 IP
+  ENV: 'dev',                  // 生产改为 'prod'
+  DEV_LAN_HOST: 'localhost',   // 真机调试改为本机局域网 IP
   DEV_SERVICE_PORT: 8081,
-  token, openId, userId,
+  debugLog: true,              // 生产设为 false；仅 ENV=dev 时输出调试日志
+  token, openId, userId,      // 运行时由登录写入，勿硬编码
   planResult, preferences, query,
   activeSessionId, streamingText, currentTraceId
 }
 ```
 
-- `api.js` 默认 fallback host：`192.168.1.100:8081`（当 globalData 不可用时）
-- `project.config.json`：`urlCheck: false`
+- `api.js` dev fallback host：`localhost:8081`（与 `app.js` 一致）
+- `api.js` prod：`https://api.example.com`（上线前替换为真实域名）
+- `project.config.json`：`urlCheck: false`（**上线前**须在公众平台配置合法 request 域名）
 - 无 `package.json`
 - 图片资源：
   - 已有：`tab-plan.svg`、`tab-plan-active.svg`、`tab-mine.svg`、`tab-mine-active.svg`、`icon-send.svg`
@@ -269,6 +270,6 @@ images/           # Tab SVG + send 图标
 2. **无 npm**：不引入 npm 依赖
 3. **遵循现有约定**：自定义 Tab、侧栏行为、设计 Token
 4. **不要恢复已废弃项**（见上表）
-5. **真机注意**：`DEV_LAN_HOST` 改局域网 IP；流式用 `stream.js` 的 chunked 方案
+5. **真机注意**：`app.js` 中 `DEV_LAN_HOST` 改局域网 IP；流式用 `stream.js` 的 chunked 方案
 6. **会话持久化**：改 planning 逻辑时留意 `onHide` / `persistActiveSession()` / `applySessionRecovery`
-7. **Mock 开关**：`planning.js` 顶部 `USE_MOCK = false`，调试时可临时开启
+7. **日志**：`ENV !== 'dev'` 或 `debugLog: false` 时不输出 API/规划调试日志；勿在日志中打印 token 或完整请求体

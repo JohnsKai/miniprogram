@@ -6,7 +6,6 @@
 
 - **路径**：`/Users/kai/workspace/miniprogram`
 - **基础库**：3.3.4
-- **AppID**：`wx2d6181733223d4fc`（见 `project.config.json`）
 - **规模**：约 58 个源码文件（不含 `.idea`）
 - **设计参考**：Figma Make — 旅行APP设计
 

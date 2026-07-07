@@ -1,0 +1,200 @@
+<view class="page" style="padding-bottom: {{tabBarPadding}}px;">
+  <!-- Banner -->
+  <view class="banner-wrap">
+    <image class="banner-img" src="/images/banner-travel.jpg" mode="aspectFill" />
+    <view class="banner-overlay">
+      <view class="banner-title">
+        <text class="banner-icon">✈</text>
+        <text>灵途</text>
+      </view>
+      <text class="banner-sub">定制您的完美旅程</text>
+    </view>
+  </view>
+
+  <!-- Main form card（ADR-08：仅目的地 + 天数） -->
+  <view class="form-card">
+    <view class="form-head">
+      <text class="form-title">规划您的旅行</text>
+      <text class="form-desc">填写目的地即可开始，其余要素可在对话中补充</text>
+    </view>
+
+    <view class="field-row field-row-2col">
+      <view class="field-col">
+        <view class="field-label">
+          <text class="label-icon label-blue">📍</text>
+          <text>目的地</text>
+          <text class="label-required">必填</text>
+        </view>
+        <input
+          class="text-input"
+          placeholder="城市或国家"
+          value="{{destination}}"
+          bindinput="onDestinationInput"
+        />
+      </view>
+      <view class="field-col">
+        <view class="field-label">
+          <text class="label-icon label-green">📅</text>
+          <text>旅行天数</text>
+          <text class="label-hint">可选</text>
+        </view>
+        <view class="days-input-box">
+          <input
+            class="text-input days-input"
+            type="number"
+            placeholder="未填则对话中确认"
+            value="{{days}}"
+            bindinput="onDaysInput"
+          />
+          <text class="days-suffix">天</text>
+          <view class="days-stepper">
+            <view class="days-step-btn" catchtap="onDaysStep" data-delta="1">▲</view>
+            <view class="days-step-btn" catchtap="onDaysStep" data-delta="-1">▼</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 更多标签：可选预填 tripProfile，减少后续追问 -->
+    <view class="field-block trip-details-block">
+      <view class="field-label field-label-between" bindtap="onToggleTripDetails">
+        <view class="field-label">
+          <text class="label-icon label-teal">🏷</text>
+          <text>更多标签</text>
+          <text class="label-hint">可选预填</text>
+        </view>
+        <text class="trip-details-toggle">{{showTripDetails ? '收起 ▲' : '展开 ▼'}}</text>
+      </view>
+
+      <block wx:if="{{showTripDetails}}">
+        <view class="sub-field">
+          <view class="sub-label">同行人</view>
+          <view class="style-list">
+            <view
+              wx:for="{{companionOptions}}"
+              wx:key="value"
+              class="style-pill {{companionType === item.value ? 'style-pill-active' : ''}}"
+              data-value="{{item.value}}"
+              bindtap="onCompanionSelect"
+            >{{item.label}}</view>
+          </view>
+          <view wx:if="{{companionType === 'family'}}" class="sub-input-row">
+            <text class="sub-input-hint">儿童年龄（逗号分隔）</text>
+            <input class="text-input" placeholder="如 6, 10" value="{{childAgesText}}" bindinput="onChildAgesInput" />
+          </view>
+          <view wx:if="{{companionType === 'with_elderly'}}" class="sub-input-row">
+            <text class="sub-input-hint">老人人数</text>
+            <input class="text-input" type="number" placeholder="如 2" value="{{elderlyCount}}" bindinput="onElderlyCountInput" />
+          </view>
+          <view wx:if="{{companionType === 'friends'}}" class="sub-input-row">
+            <text class="sub-input-hint">同行人数</text>
+            <input class="text-input" type="number" placeholder="如 6" value="{{groupSize}}" bindinput="onGroupSizeInput" />
+          </view>
+        </view>
+
+        <view class="sub-field">
+          <view class="sub-label">出行时间</view>
+          <picker mode="date" fields="month" value="{{travelMonth}}" bindchange="onTravelMonthChange">
+            <view class="picker-row">
+              <text class="picker-label">计划月份</text>
+              <text class="picker-value">{{travelMonth || '请选择'}}</text>
+            </view>
+          </picker>
+          <view class="field-row field-row-2col sub-date-row">
+            <picker mode="date" value="{{travelStartDate}}" bindchange="onTravelStartChange">
+              <view class="picker-row picker-row-half">
+                <text class="picker-label">出发日</text>
+                <text class="picker-value">{{travelStartDate || '可选'}}</text>
+              </view>
+            </picker>
+            <picker mode="date" value="{{travelEndDate}}" bindchange="onTravelEndChange">
+              <view class="picker-row picker-row-half">
+                <text class="picker-label">返程日</text>
+                <text class="picker-value">{{travelEndDate || '可选'}}</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="sub-field">
+          <view class="sub-label">体力偏好</view>
+          <view class="style-list">
+            <view
+              wx:for="{{paceOptions}}"
+              wx:key="value"
+              class="style-pill {{pace === item.value ? 'style-pill-active' : ''}}"
+              data-value="{{item.value}}"
+              bindtap="onPaceSelect"
+            >{{item.label}}</view>
+          </view>
+        </view>
+
+        <view class="sub-field">
+          <view class="sub-label">兴趣侧重</view>
+          <view class="style-list">
+            <view
+              wx:for="{{interestList}}"
+              wx:key="code"
+              class="style-pill {{item.selected ? 'style-pill-active' : ''}}"
+              data-code="{{item.code}}"
+              bindtap="onToggleInterest"
+            >
+              <text class="style-emoji">{{item.emoji}}</text>
+              <text>{{item.label}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="sub-field">
+          <view class="sub-label">特殊限制</view>
+          <view class="tag-list">
+            <view
+              wx:for="{{dietaryTagList}}"
+              wx:key="tag"
+              class="tag-pill {{item.selected ? 'tag-pill-active' : ''}}"
+              data-tag="{{item.tag}}"
+              bindtap="onToggleDietary"
+            >{{item.tag}}</view>
+          </view>
+          <label class="no-limit-row">
+            <checkbox checked="{{constraintsNoLimit}}" bindchange="onConstraintsNoLimit" color="#030213" />
+            <text>无饮食/行动限制</text>
+          </label>
+        </view>
+
+        <view class="sub-field">
+          <view class="sub-label">往返大交通</view>
+          <view class="style-list">
+            <view
+              wx:for="{{transportModes}}"
+              wx:key="value"
+              class="style-pill {{transportMode === item.value ? 'style-pill-active' : ''}}"
+              data-value="{{item.value}}"
+              bindtap="onTransportModeSelect"
+            >{{item.label}}</view>
+          </view>
+        </view>
+
+        <view class="sub-field">
+          <view class="sub-label">补充说明</view>
+          <textarea
+            class="textarea textarea-sm"
+            placeholder="其他需求或注意事项（可选）"
+            value="{{extraNotes}}"
+            maxlength="-1"
+            bindinput="onExtraNotesInput"
+          />
+        </view>
+      </block>
+    </view>
+
+    <button class="btn-submit" bindtap="onStartPlan">
+      <text class="btn-submit-icon">✈</text>
+      <text>开始规划</text>
+    </button>
+  </view>
+
+  <text class="footer-tip">提示：天数可不填，对话中会帮您确认出行时间与天数</text>
+
+  <bottom-tab-bar active="plan" />
+</view>

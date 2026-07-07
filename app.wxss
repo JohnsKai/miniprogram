@@ -1,0 +1,46 @@
+/* 全局样式变量 */
+page {
+  --primary: #030213;
+  --primary-fg: #ffffff;
+  --bg: #ffffff;
+  --card-bg: #ffffff;
+  --muted: #ececf0;
+  --text: #030213;
+  --text-secondary: #717182;
+  --border: rgba(0, 0, 0, 0.1);
+  --input-bg: #f3f3f5;
+  --user-avatar-bg: #dbeafe;
+  --user-avatar-fg: #1d4ed8;
+  --shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+  box-sizing: border-box;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow);
+  padding: 32rpx;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #FFFFFF;
+  border-radius: 48rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  border: none;
+}
+
+.btn-primary::after {
+  border: none;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16rpx;
+}

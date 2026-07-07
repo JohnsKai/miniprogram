@@ -1,0 +1,28 @@
+<view class="tab-bar" style="padding-bottom: {{safeAreaBottom}}px;">
+  <view
+    class="tab-item {{active === 'plan' ? 'tab-item-active' : ''}}"
+    data-tab="plan"
+    bindtap="onTabTap"
+  >
+    <image
+      class="tab-icon"
+      src="{{active === 'plan' ? '/images/tab-plan-active.svg' : '/images/tab-plan.svg'}}"
+      mode="aspectFit"
+    />
+    <text class="tab-label">规划</text>
+    <view wx:if="{{active === 'plan'}}" class="tab-indicator"></view>
+  </view>
+  <view
+    class="tab-item {{active === 'mine' ? 'tab-item-active' : ''}}"
+    data-tab="mine"
+    bindtap="onTabTap"
+  >
+    <image
+      class="tab-icon"
+      src="{{active === 'mine' ? '/images/tab-mine-active.svg' : '/images/tab-mine.svg'}}"
+      mode="aspectFit"
+    />
+    <text class="tab-label">我的</text>
+    <view wx:if="{{active === 'mine'}}" class="tab-indicator"></view>
+  </view>
+</view>

@@ -1,0 +1,7 @@
+{
+  "navigationStyle": "custom",
+  "backgroundColor": "#eff6ff",
+  "usingComponents": {
+    "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar"
+  }
+}

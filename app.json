@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/mine/mine",
+    "pages/planning/planning",
+    "pages/sessions/sessions",
+    "pages/history/history",
+    "pages/result/result"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#eff6ff",
+    "navigationBarTitleText": "AI 旅行规划",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#eff6ff"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

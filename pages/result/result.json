@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "行程详情",
+  "usingComponents": {
+    "day-card": "/components/day-card/day-card"
+  }
+}

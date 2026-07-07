@@ -1,0 +1,38 @@
+<view class="history-page">
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <text class="loading-text">加载中…</text>
+  </view>
+
+  <view wx:elif="{{historyList.length === 0}}" class="empty-card">
+    <text class="empty-icon">✈</text>
+    <text class="empty-text">还没有旅行方案</text>
+    <text class="empty-sub">去「规划」页面创建您的第一次旅行吧</text>
+  </view>
+
+  <view wx:else class="history-list">
+    <view
+      wx:for="{{historyList}}"
+      wx:key="sessionId"
+      class="history-card"
+      data-id="{{item.sessionId}}"
+      bindtap="onOpenSession"
+    >
+      <view class="history-thumb">
+        <text class="history-icon">📍</text>
+      </view>
+      <view class="history-main">
+        <view class="history-title-row">
+          <text class="history-title">{{item.title}}</text>
+          <text wx:if="{{item.statusLabel}}" class="history-status">{{item.statusLabel}}</text>
+        </view>
+        <text class="history-preview">{{item.preview}}</text>
+        <view class="history-meta">
+          <text>{{item.dateLabel}}</text>
+          <text class="meta-dot">·</text>
+          <text>{{item.msgCount}} 条对话</text>
+        </view>
+      </view>
+      <text class="history-arrow">›</text>
+    </view>
+  </view>
+</view>

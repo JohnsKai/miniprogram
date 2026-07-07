@@ -1,0 +1,141 @@
+<view class="mine-page" style="padding-bottom: {{tabBarPadding}}px;">
+  <!-- 顶部渐变 + 个人信息 -->
+  <view class="profile-header">
+    <view class="profile-gradient" style="padding-top: {{statusBarHeight}}px;"></view>
+    <view class="profile-body">
+      <view class="profile-row">
+        <view class="profile-avatar">
+          <image wx:if="{{profile.avatarUrl}}" class="profile-avatar-img" src="{{profile.avatarUrl}}" mode="aspectFill" />
+          <text wx:else>🧳</text>
+        </view>
+        <view class="profile-info">
+          <text class="profile-name">{{profile.nickname}}</text>
+          <text class="profile-bio">{{profile.bio}}</text>
+        </view>
+      </view>
+
+      <view class="stats-grid">
+        <view class="stat-item">
+          <text class="stat-value">{{stats.planCount}}</text>
+          <text class="stat-label">规划次数</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{stats.totalDays}}</text>
+          <text class="stat-label">累计天数</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{stats.savedCount}}</text>
+          <text class="stat-label">收藏路线</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="mine-content">
+    <!-- 历史方案 -->
+    <view class="section">
+      <view class="section-head">
+        <view class="section-title-wrap">
+          <text class="section-icon section-icon-blue">🕐</text>
+          <text class="section-title">历史旅游方案</text>
+        </view>
+        <text wx:if="{{hasMoreHistory}}" class="section-more" bindtap="onViewAllHistory">全部 ›</text>
+      </view>
+
+      <view wx:if="{{historyList.length === 0}}" class="empty-card">
+        <text class="empty-icon">✈</text>
+        <text class="empty-text">还没有旅行方案</text>
+        <text class="empty-sub">去「规划」页面创建您的第一次旅行吧</text>
+        <button class="empty-btn" bindtap="onGoPlan">去规划</button>
+      </view>
+
+      <view wx:else class="history-list">
+        <view
+          wx:for="{{historyList}}"
+          wx:key="sessionId"
+          class="history-card"
+          data-id="{{item.sessionId}}"
+          bindtap="onOpenSession"
+        >
+          <view class="history-thumb">
+            <text class="history-icon">📍</text>
+          </view>
+          <view class="history-main">
+            <text class="history-title">{{item.title}}</text>
+            <text class="history-preview">{{item.preview}}</text>
+            <view class="history-meta">
+              <text>{{item.dateLabel}}</text>
+              <text class="meta-dot">·</text>
+              <text>{{item.msgCount}} 条对话</text>
+            </view>
+          </view>
+          <text class="history-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 收藏路线 -->
+    <view class="section">
+      <view class="section-head">
+        <view class="section-title-wrap">
+          <text class="section-icon section-icon-pink">🔖</text>
+          <text class="section-title">收藏的路线</text>
+        </view>
+        <text class="section-more">全部 ›</text>
+      </view>
+
+      <view wx:if="{{savedRoutes.length === 0}}" class="empty-card empty-card-compact">
+        <text class="empty-icon">🔖</text>
+        <text class="empty-text">还没有收藏路线</text>
+        <text class="empty-sub">完成规划后可收藏喜欢的方案</text>
+      </view>
+
+      <view wx:else class="route-list">
+        <view
+          wx:for="{{savedRoutes}}"
+          wx:key="id"
+          class="route-card"
+          data-id="{{item.id}}"
+          data-session-id="{{item.sessionId}}"
+          bindtap="onOpenFavorite"
+          bindlongpress="onDeleteFavorite"
+        >
+          <view class="route-cover" style="background: {{item.gradient}};"></view>
+          <view class="route-info">
+            <text class="route-title">{{item.title}}</text>
+            <view class="route-meta">
+              <text>{{item.days}} 天</text>
+              <text class="meta-dot">·</text>
+              <text>★ {{item.rating}}</text>
+            </view>
+            <view class="route-tags">
+              <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this" class="route-tag">{{tag}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 设置入口 -->
+    <view class="menu-card">
+      <view class="menu-item" bindtap="onMenuTap" data-type="profile">
+        <view class="menu-icon-wrap"><text>👤</text></view>
+        <view class="menu-text">
+          <text class="menu-label">个人信息</text>
+          <text class="menu-sub">编辑您的旅行偏好</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="onMenuTap" data-type="settings">
+        <view class="menu-icon-wrap"><text>⚙</text></view>
+        <view class="menu-text">
+          <text class="menu-label">设置</text>
+          <text class="menu-sub">通知、语言、隐私</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <bottom-tab-bar active="mine" />
+</view>

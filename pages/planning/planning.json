@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "灵途",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "day-card": "/components/day-card/day-card",
+    "session-sidebar": "/components/session-sidebar/session-sidebar"
+  }
+}

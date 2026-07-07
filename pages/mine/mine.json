@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "bottom-tab-bar": "/components/bottom-tab-bar/bottom-tab-bar"
+  }
+}

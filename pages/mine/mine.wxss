@@ -1,0 +1,395 @@
+.mine-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.profile-header {
+  position: relative;
+}
+
+.profile-gradient {
+  height: 240rpx;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  box-sizing: content-box;
+}
+
+.profile-body {
+  padding: 0 40rpx 40rpx;
+  margin-top: -80rpx;
+}
+
+.profile-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 24rpx;
+  margin-bottom: 32rpx;
+}
+
+.profile-avatar {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  border: 4rpx solid #fff;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72rpx;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 8rpx;
+}
+
+.profile-name {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #030213;
+  line-height: 1.3;
+}
+
+.profile-bio {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 26rpx;
+  color: #717182;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+}
+
+.stat-item {
+  background: rgba(236, 236, 240, 0.6);
+  border-radius: 24rpx;
+  padding: 24rpx 12rpx;
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #030213;
+  line-height: 1.2;
+}
+
+.stat-label {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #717182;
+}
+
+.mine-content {
+  padding: 0 32rpx;
+}
+
+.section {
+  margin-bottom: 40rpx;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 10rpx;
+}
+
+.section-icon {
+  font-size: 28rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #030213;
+  line-height: 1;
+}
+
+.section-more {
+  font-size: 24rpx;
+  color: #717182;
+  line-height: 1;
+  padding-bottom: 2rpx;
+}
+
+.empty-card {
+  background: rgba(236, 236, 240, 0.4);
+  border-radius: 32rpx;
+  padding: 64rpx 40rpx;
+  text-align: center;
+}
+
+.empty-card-compact {
+  padding: 48rpx 32rpx;
+}
+
+.empty-icon {
+  display: block;
+  font-size: 64rpx;
+  opacity: 0.35;
+  margin-bottom: 16rpx;
+}
+
+.empty-text {
+  display: block;
+  font-size: 28rpx;
+  color: #717182;
+}
+
+.empty-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: rgba(113, 113, 130, 0.7);
+}
+
+.empty-btn {
+  margin-top: 32rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 48rpx;
+  height: 72rpx;
+  background: #030213;
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  border: none;
+}
+
+.empty-btn::after {
+  border: none;
+}
+
+.history-list,
+.route-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+/* 历史方案 — 左图右文等高贴边 */
+.history-card {
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+  border: 1rpx solid rgba(0, 0, 0, 0.08);
+  border-radius: 32rpx;
+  overflow: hidden;
+}
+
+.history-thumb {
+  width: 128rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+}
+
+.history-icon {
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+.history-main {
+  flex: 1;
+  min-width: 0;
+  padding: 20rpx 16rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.history-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #030213;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-preview {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #717182;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-meta {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #717182;
+  line-height: 1.35;
+}
+
+.meta-dot {
+  opacity: 0.4;
+}
+
+.history-arrow {
+  align-self: center;
+  padding-right: 24rpx;
+  font-size: 36rpx;
+  color: #717182;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* 收藏路线 — 左图右文等高贴边 */
+.route-card {
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+  border: 1rpx solid rgba(0, 0, 0, 0.08);
+  border-radius: 32rpx;
+  overflow: hidden;
+}
+
+.route-cover {
+  width: 128rpx;
+  flex-shrink: 0;
+}
+
+.route-info {
+  flex: 1;
+  min-width: 0;
+  padding: 20rpx 24rpx 20rpx 16rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.route-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #030213;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-meta {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #717182;
+  line-height: 1.35;
+}
+
+.route-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 8rpx;
+}
+
+.route-tag {
+  font-size: 22rpx;
+  color: #717182;
+  background: #ececf0;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  line-height: 1.35;
+}
+
+.menu-card {
+  border: 1rpx solid rgba(0, 0, 0, 0.08);
+  border-radius: 32rpx;
+  overflow: hidden;
+  margin-bottom: 16rpx;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 28rpx 32rpx;
+  background: #fff;
+}
+
+.menu-item + .menu-item {
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
+}
+
+.menu-icon-wrap {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+  background: #ececf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.menu-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #030213;
+  line-height: 1.35;
+}
+
+.menu-sub {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #717182;
+  line-height: 1.35;
+}
+
+.menu-arrow {
+  font-size: 36rpx;
+  color: #717182;
+  line-height: 1;
+  flex-shrink: 0;
+}

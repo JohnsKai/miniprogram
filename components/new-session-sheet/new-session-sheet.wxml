@@ -1,0 +1,18 @@
+<view wx:if="{{visible}}" class="sheet-mask" bindtap="onClose"></view>
+<view class="sheet {{visible ? 'sheet-open' : ''}}">
+  <view class="sheet-header">
+    <text class="sheet-title">新建规划</text>
+    <text class="sheet-close" bindtap="onClose">×</text>
+  </view>
+  <scroll-view scroll-y class="sheet-body">
+    <view class="sheet-section">
+      <text class="sheet-label">目的地（必填）</text>
+      <input class="sheet-input" placeholder="例如：云南" value="{{destination}}" bindinput="onDestinationInput" />
+      <text class="sheet-label mt">旅行天数（可选）</text>
+      <input class="sheet-input" type="number" placeholder="未填则对话中确认" value="{{days}}" bindinput="onDaysInput" />
+    </view>
+  </scroll-view>
+  <view class="sheet-footer">
+    <button class="sheet-submit" bindtap="onSubmit">开始规划</button>
+  </view>
+</view>

@@ -1,0 +1,45 @@
+<view class="page">
+  <view class="overview card">
+    <text class="overview-query">{{query}}</text>
+    <view class="overview-meta">
+      <text class="meta-item">📅 {{overview.dateRange}}</text>
+      <text class="meta-item">💰 {{overview.budget}}</text>
+    </view>
+    <view class="style-tags" wx:if="{{overview.styles.length}}">
+      <text wx:for="{{overview.styles}}" wx:key="*this" class="style-tag">{{item}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{summary}}" class="summary-card card">
+    <text class="summary-title">行程概要</text>
+    <text class="summary-body">{{summary}}</text>
+  </view>
+
+  <view class="days-list">
+    <block wx:for="{{days}}" wx:key="day">
+      <day-card dayData="{{item}}" />
+    </block>
+    <view wx:if="{{days.length === 0 && !loading}}" class="empty-tip">
+      <text>暂无行程数据</text>
+    </view>
+  </view>
+
+  <view class="action-bar">
+    <view class="action-item" bindtap="onCopyText">
+      <text class="action-icon">📋</text>
+      <text class="action-label">复制文本</text>
+    </view>
+    <view class="action-item" bindtap="onOpenMap">
+      <text class="action-icon">🗺️</text>
+      <text class="action-label">查看地图</text>
+    </view>
+    <view class="action-item" bindtap="onSavePlan">
+      <text class="action-icon">💾</text>
+      <text class="action-label">保存行程</text>
+    </view>
+  </view>
+
+  <view class="fab" bindtap="onReplan">
+    <text>重新规划</text>
+  </view>
+</view>

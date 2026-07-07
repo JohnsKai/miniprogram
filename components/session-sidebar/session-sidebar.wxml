@@ -1,0 +1,54 @@
+<view wx:if="{{visible}}" class="sidebar-mask" bindtap="onClose"></view>
+<view class="sidebar {{visible ? 'sidebar-open' : ''}}">
+  <view class="sidebar-header" style="padding-top: {{statusBarHeight}}px;">
+    <text class="sidebar-title">✈ 灵途</text>
+    <view class="sidebar-go-plan" bindtap="onGoPlan">
+      <text class="sidebar-go-plan-icon">+</text>
+    </view>
+  </view>
+  <view class="sidebar-search-wrap">
+    <input
+      class="sidebar-search"
+      placeholder="搜索目的地..."
+      value="{{keyword}}"
+      bindinput="onSearchInput"
+      bindconfirm="onSearch"
+    />
+  </view>
+  <text wx:if="{{list.length}}" class="sidebar-section-label">历史记录</text>
+  <scroll-view scroll-y class="sidebar-list">
+    <view
+      wx:for="{{list}}"
+      wx:key="sessionId"
+      class="sidebar-item {{item.sessionId === activeSessionId ? 'sidebar-item-active' : ''}}"
+      data-id="{{item.sessionId}}"
+      bindtap="onSelect"
+      bindlongpress="onLongPress"
+    >
+      <view class="sidebar-item-row">
+        <text class="sidebar-pin-icon">📍</text>
+        <view class="sidebar-item-main">
+          <view class="sidebar-item-head">
+            <text class="sidebar-item-title">{{item.title}}</text>
+            <text wx:if="{{item.pinned}}" class="sidebar-item-pin">📌</text>
+          </view>
+          <text wx:if="{{item.summaryPreview}}" class="sidebar-preview">{{item.summaryPreview}}</text>
+          <view class="sidebar-item-meta">
+            <text class="sidebar-time">{{item.timeLabel}}</text>
+            <text class="sidebar-status status-{{item.status}}">{{item.statusLabel}}</text>
+          </view>
+        </view>
+        <view
+          class="sidebar-item-delete"
+          data-id="{{item.sessionId}}"
+          catchtap="onDelete"
+          aria-role="button"
+          aria-label="删除"
+        >
+          <text class="sidebar-delete-icon">×</text>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{!list.length}}" class="sidebar-empty">暂无历史对话</view>
+  </scroll-view>
+</view>

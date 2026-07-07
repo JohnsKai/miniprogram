@@ -1,0 +1,136 @@
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 300;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 88vh;
+  background: #ffffff;
+  border-radius: 32rpx 32rpx 0 0;
+  z-index: 301;
+  transform: translateY(100%);
+  transition: transform 0.28s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-open {
+  transform: translateY(0);
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  border-bottom: 1rpx solid #F0EDE8;
+}
+
+.sheet-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #030213;
+}
+
+.sheet-close {
+  font-size: 44rpx;
+  color: #999;
+}
+
+.sheet-body {
+  flex: 1;
+  height: 0;
+  padding: 24rpx 32rpx;
+}
+
+.sheet-section {
+  background: #FFF;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.sheet-label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.sheet-label.mt {
+  margin-top: 20rpx;
+}
+
+.sheet-input {
+  background: #F0EDE8;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+}
+
+.tag-scroll {
+  white-space: nowrap;
+}
+
+.tag-list {
+  display: inline-flex;
+  gap: 12rpx;
+}
+
+.tag {
+  padding: 10rpx 24rpx;
+  border-radius: 28rpx;
+  background: #F0EDE8;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.tag-active {
+  background: #030213;
+  color: #FFF;
+}
+
+.budget-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.budget-value {
+  color: #030213;
+  font-weight: 600;
+}
+
+.picker-value {
+  background: #F0EDE8;
+  padding: 20rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}
+
+.sheet-footer {
+  padding: 20rpx 32rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+}
+
+.sheet-submit {
+  background: #030213;
+  color: #FFF;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  border: none;
+}
+
+.sheet-submit::after {
+  border: none;
+}

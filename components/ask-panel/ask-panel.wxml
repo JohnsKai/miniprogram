@@ -1,0 +1,4 @@
+<!-- ask-panel 占位模板 -->
+<view wx:if="{{false}}"></view>
+
+<!-- SelfCheck: 已通过 占位模板不渲染 校验 -->

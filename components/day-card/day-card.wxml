@@ -1,0 +1,88 @@
+<view class="day-card">
+  <view class="card-header">
+    <text class="day-title">{{dayData.date || ('Day ' + dayData.day)}}</text>
+    <view class="header-actions">
+      <view class="weather-info">
+        <text class="weather-icon">{{weatherIcon}}</text>
+        <text class="weather-text">{{dayData.weather}}</text>
+      </view>
+      <text class="collect-star" catchtap="onToggleCollect">{{collected ? '★' : '☆'}}</text>
+    </view>
+  </view>
+
+  <view class="timeline" wx:if="{{enrichedActivities.length}}">
+    <view class="timeline-track"></view>
+    <view class="timeline-item" wx:for="{{enrichedActivities}}" wx:key="index">
+      <view class="time-col">
+        <text class="time-start">{{item.timeStart || '—'}}</text>
+        <text class="time-end" wx:if="{{item.timeEnd}}">{{item.timeEnd}}</text>
+      </view>
+      <view class="content-col">
+        <view class="activity-dot"></view>
+        <view class="activity-body">
+          <view class="activity-row">
+            <text class="activity-type">{{item.type}}</text>
+            <view
+              wx:if="{{item.showMap}}"
+              class="map-btn"
+              data-index="{{index}}"
+              catchtap="onOpenActivityMap"
+            >🗺️</view>
+          </view>
+          <text
+            wx:if="{{item.type === '景点'}}"
+            class="activity-desc trackable-name"
+            data-track="attraction:{{item.locationName || item.desc}}"
+            bindtap="onTrackTap"
+          >{{item.desc}}</text>
+          <text wx:else class="activity-desc">{{item.desc}}</text>
+          <text class="activity-location" wx:if="{{item.locationName}}">📍 {{item.locationName}}</text>
+          <text class="activity-distance" wx:if="{{item.walkingDistance}}">🚶 {{item.walkingDistance}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-divider" wx:if="{{enrichedMeals.length}}"></view>
+
+  <view class="meals-section" wx:if="{{enrichedMeals.length}}">
+    <text class="sub-title">🍽️ 餐饮推荐</text>
+    <view class="meal-item" wx:for="{{enrichedMeals}}" wx:key="index">
+      <view class="meal-header">
+        <text class="meal-type-tag">{{item.type}}</text>
+        <view class="meal-stars" wx:if="{{item.rating}}">
+          <text wx:for="{{item.starArray}}" wx:key="*this" class="star">⭐</text>
+          <text class="rating-num">{{item.rating}}</text>
+        </view>
+      </view>
+      <text
+        class="meal-name trackable-name"
+        data-track="meal:{{item.name}}"
+        bindtap="onTrackTap"
+      >{{item.name}}</text>
+      <text class="meal-comment" wx:if="{{item.comment}}">{{item.comment}}</text>
+    </view>
+  </view>
+
+  <view class="section-divider" wx:if="{{dayData.hotel}}"></view>
+
+  <view class="hotel-section" wx:if="{{dayData.hotel}}">
+    <text class="sub-title">🏨 住宿</text>
+    <view class="hotel-card">
+      <text
+        class="hotel-name trackable-name"
+        data-track="hotel:{{dayData.hotel.name}}"
+        bindtap="onTrackTap"
+      >{{dayData.hotel.name}}</text>
+      <view class="hotel-meta">
+        <text class="hotel-price" wx:if="{{dayData.hotel.price}}">¥{{dayData.hotel.price}}/晚</text>
+        <text
+          wx:for="{{dayData.hotel.tags}}"
+          wx:key="*this"
+          class="hotel-tag"
+        >{{item}}</text>
+        <text wx:if="{{dayData.hotel.tag && !dayData.hotel.tags.length}}" class="hotel-tag">{{dayData.hotel.tag}}</text>
+      </view>
+    </view>
+  </view>
+</view>

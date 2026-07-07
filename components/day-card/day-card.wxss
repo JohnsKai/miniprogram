@@ -1,0 +1,279 @@
+.day-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 24rpx rgba(3, 2, 19, 0.08);
+  padding: 48rpx;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #F0EDE8;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.collect-star {
+  font-size: 40rpx;
+  color: #F5A623;
+  line-height: 1;
+  padding: 4rpx 8rpx;
+}
+
+.day-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.weather-info {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.weather-icon {
+  font-size: 32rpx;
+}
+
+.weather-text {
+  font-size: 24rpx;
+  color: #666666;
+}
+
+.timeline {
+  position: relative;
+  margin-bottom: 8rpx;
+}
+
+.timeline-track {
+  position: absolute;
+  left: 132rpx;
+  top: 12rpx;
+  bottom: 12rpx;
+  width: 2rpx;
+  background: #E8E4DE;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 28rpx;
+  position: relative;
+}
+
+.time-col {
+  width: 112rpx;
+  flex-shrink: 0;
+  padding-right: 12rpx;
+  box-sizing: border-box;
+}
+
+.time-start,
+.time-end {
+  display: block;
+  font-size: 22rpx;
+  color: var(--primary);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.time-end {
+  margin-top: 4rpx;
+  color: #666666;
+  font-weight: 500;
+}
+
+.content-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  padding-left: 28rpx;
+  position: relative;
+}
+
+.activity-dot {
+  position: absolute;
+  left: -8rpx;
+  top: 8rpx;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3rpx solid #FFFFFF;
+  box-shadow: 0 0 0 2rpx var(--primary);
+}
+
+.activity-body {
+  flex: 1;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.activity-type {
+  display: inline-block;
+  font-size: 20rpx;
+  color: var(--primary);
+  background: rgba(3, 2, 19, 0.1);
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+}
+
+.map-btn {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--input-bg);
+  border-radius: 50%;
+  font-size: 28rpx;
+}
+
+.activity-desc {
+  display: block;
+  font-size: 26rpx;
+  color: #333333;
+  line-height: 1.6;
+}
+
+.trackable-name {
+  color: var(--primary);
+}
+
+.activity-location {
+  display: block;
+  font-size: 24rpx;
+  color: #666666;
+  margin-top: 6rpx;
+}
+
+.activity-distance {
+  display: block;
+  font-size: 22rpx;
+  color: #999999;
+  margin-top: 6rpx;
+}
+
+.section-divider {
+  height: 1rpx;
+  background: #F0EDE8;
+  margin: 20rpx 0;
+}
+
+.sub-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 16rpx;
+}
+
+.meals-section {
+  margin-bottom: 8rpx;
+}
+
+.meal-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #F0EDE8;
+}
+
+.meal-item:last-child {
+  border-bottom: none;
+}
+
+.meal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.meal-type-tag {
+  font-size: 22rpx;
+  color: #FFFFFF;
+  background: var(--primary);
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.meal-stars {
+  display: flex;
+  align-items: center;
+  gap: 2rpx;
+}
+
+.star {
+  font-size: 20rpx;
+}
+
+.rating-num {
+  font-size: 22rpx;
+  color: #F5A623;
+  margin-left: 6rpx;
+}
+
+.meal-name {
+  display: block;
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.meal-comment {
+  display: block;
+  font-size: 24rpx;
+  color: #999999;
+  margin-top: 4rpx;
+}
+
+.hotel-section {
+  margin-top: 8rpx;
+}
+
+.hotel-card {
+  background: var(--input-bg);
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+}
+
+.hotel-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 12rpx;
+}
+
+.hotel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.hotel-price {
+  font-size: 26rpx;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.hotel-tag {
+  font-size: 22rpx;
+  color: var(--primary);
+  background: rgba(45, 91, 79, 0.12);
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+}

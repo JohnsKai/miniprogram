@@ -1,0 +1,175 @@
+<view class="sessions-page">
+  <view
+    class="top-bar"
+    style="height: {{navBarHeight}}px; padding-top: {{statusBarHeight}}px; padding-right: {{navPaddingRight}}px;"
+  >
+    <view class="top-bar-inner" style="height: {{navContentHeight}}px;">
+      <view class="top-btn" bindtap="onToggleSidebar">☰</view>
+      <view class="top-title-wrap">
+        <text class="top-title">{{activeTitle}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{emptyState}}" class="empty-state">
+    <text class="empty-title">开始你的旅行规划</text>
+    <button class="empty-btn" bindtap="onEmptyOpenSidebar">新建规划</button>
+  </view>
+
+  <view wx:else class="chat-page">
+    <view wx:if="{{sessionLoading}}" class="session-loading">
+      <text class="session-loading-text">正在加载对话…</text>
+    </view>
+    <scroll-view wx:else scroll-y enhanced show-scrollbar="{{false}}" class="chat-scroll" scroll-into-view="{{scrollTo}}" scroll-with-animation scroll-top="{{scrollTop}}" upper-threshold="80" bindscrolltoupper="onLoadOlderMessages">
+      <view class="chat-list">
+        <view wx:if="{{loadingOlder}}" class="load-older-hint">
+          <text class="load-older-text">加载更早消息…</text>
+        </view>
+        <block wx:for="{{messages}}" wx:key="id">
+          <view wx:if="{{item.role === 'user'}}" class="msg-row msg-row-user" id="{{item.id}}">
+            <view class="bubble bubble-user">
+              <text class="bubble-text">{{item.content}}</text>
+            </view>
+            <view class="avatar avatar-user">我</view>
+          </view>
+          <view wx:elif="{{item.type === 'thinking'}}" class="msg-row msg-row-assistant" id="{{item.id}}">
+            <view class="avatar avatar-ai">✨</view>
+            <view class="bubble bubble-assistant bubble-thinking">
+              <view class="thinking-dots">
+                <view class="dot"></view>
+                <view class="dot"></view>
+                <view class="dot"></view>
+              </view>
+              <text class="bubble-text thinking-label">{{item.content}}</text>
+            </view>
+          </view>
+          <view wx:elif="{{item.type === 'phase'}}" class="msg-row msg-row-assistant" id="{{item.id}}">
+            <view class="avatar avatar-spacer"></view>
+            <view class="bubble bubble-assistant bubble-phase">
+              <text class="phase-step-badge" wx:if="{{item.progress && item.total}}">{{item.progress}}/{{item.total}}</text>
+              <text class="bubble-text phase-label">{{item.content}}</text>
+            </view>
+          </view>
+          <view wx:elif="{{item.type === 'summary'}}" class="msg-row msg-row-assistant msg-row-route" id="{{item.id}}">
+            <view class="avatar avatar-ai">✨</view>
+            <view class="route-wrap">
+              <view class="summary-card">
+                <text class="summary-title">行程概要</text>
+                <text class="summary-body">{{item.summary}}</text>
+              </view>
+            </view>
+          </view>
+          <view wx:elif="{{item.type === 'day'}}" class="msg-row msg-row-assistant msg-row-route" id="{{item.id}}">
+            <view class="avatar avatar-spacer"></view>
+            <view class="route-wrap route-wrap-days">
+              <day-card dayData="{{item.dayData}}" />
+            </view>
+          </view>
+          <block wx:elif="{{item.type === 'route'}}">
+            <view class="msg-row msg-row-assistant msg-row-route" id="{{item.id}}">
+              <view class="avatar avatar-ai">✨</view>
+              <view class="route-wrap">
+                <view class="summary-card route-unified-card">
+                  <text class="summary-title">{{item.content || '行程概要'}}</text>
+                  <text wx:if="{{item.summary}}" class="summary-body">{{item.summary}}</text>
+                </view>
+                <view class="route-cards">
+                  <day-card wx:for="{{item.days}}" wx:for-item="dayItem" wx:key="day" dayData="{{dayItem}}" />
+                </view>
+              </view>
+            </view>
+            <view wx:if="{{item.footer}}" class="msg-row msg-row-assistant msg-row-route-footer" id="{{item.id}}_footer">
+              <view class="avatar avatar-ai">✨</view>
+              <view class="bubble bubble-assistant bubble-route-footer">
+                <text class="bubble-text">{{item.footer}}</text>
+              </view>
+            </view>
+          </block>
+          <view wx:else class="msg-row msg-row-assistant" id="{{item.id}}">
+            <view class="avatar avatar-ai">✨</view>
+            <view class="bubble bubble-assistant">
+              <text class="bubble-text bubble-pre">{{item.content}}</text>
+            </view>
+          </view>
+        </block>
+        <view wx:if="{{showOverlay}}" class="msg-row msg-row-assistant msg-row-route" id="plan-overlay">
+          <view class="avatar avatar-spacer"></view>
+          <view class="route-wrap route-wrap-days">
+            <view class="plan-overlay">
+              <view class="thinking-dots">
+                <view class="dot"></view>
+                <view class="dot"></view>
+                <view class="dot"></view>
+              </view>
+              <text class="plan-overlay-text">正在根据您的反馈调整行程...</text>
+            </view>
+          </view>
+        </view>
+        <view class="chat-bottom-space"></view>
+      </view>
+    </scroll-view>
+
+    <view class="chat-footer">
+      <view wx:if="{{showIntakeProgress && intakeProgressLabel && planningPhase === 'intake'}}" class="intake-progress-bar">
+        <text class="intake-progress-text">{{intakeProgressLabel}}</text>
+        <text wx:if="{{questionCategoryLabel}}" class="intake-category-text">当前：{{questionCategoryLabel}}</text>
+      </view>
+      <view wx:if="{{planDegraded && degradedHint}}" class="degraded-hint-bar">
+        <text class="degraded-hint-text">⚠ {{degradedHint}}</text>
+      </view>
+      <view wx:if="{{planStepsHint}}" class="plan-steps-hint-bar">
+        <text class="plan-steps-hint-text">{{planStepsHint}}</text>
+      </view>
+      <view wx:if="{{showInterruptBanner}}" class="interrupt-banner" bindtap="onRetry">
+        <text class="interrupt-banner-text">{{interruptBannerText}}</text>
+      </view>
+      <view wx:if="{{awaitingReply && askOptions.length}}" class="ask-options">
+        <view
+          wx:for="{{askOptions}}"
+          wx:key="*this"
+          class="ask-option-chip"
+          data-text="{{item}}"
+          bindtap="onTapAskOption"
+        >{{item}}</view>
+      </view>
+      <view class="chat-input-wrap">
+        <view class="chat-input-box">
+          <input
+            class="chat-input"
+            value="{{inputValue}}"
+            placeholder="{{inputPlaceholder}}"
+            disabled="{{planAdjustDisabled || (!awaitingReply && !postPlanChat && (planComplete || isThinking))}}"
+            focus="{{inputFocus}}"
+            confirm-type="send"
+            bindinput="onInputChange"
+            bindconfirm="onSendMessage"
+          />
+          <button
+            class="chat-send-btn"
+            bindtap="onSendMessage"
+            disabled="{{planAdjustDisabled || (!awaitingReply && !postPlanChat && (planComplete || isThinking))}}"
+          >
+            <image class="chat-send-plane" src="/images/icon-send.svg" mode="aspectFit" />
+          </button>
+        </view>
+        <text class="chat-input-hint">旅行方案仅供参考，请结合实际情况安排行程</text>
+      </view>
+    </view>
+  </view>
+
+  <session-sidebar
+    visible="{{sidebarOpen}}"
+    list="{{historyList}}"
+    activeSessionId="{{activeSessionId}}"
+    statusBarHeight="{{statusBarHeight}}"
+    sessionCount="{{sessionCount}}"
+    maxSessions="{{maxSessions}}"
+    bind:close="onCloseSidebar"
+    bind:select="onSidebarSelect"
+    bind:search="onSidebarSearch"
+    bind:longpress="onSidebarLongPress"
+    bind:delete="onSidebarDelete"
+    bind:goplan="onGoToPlan"
+  />
+
+</view>

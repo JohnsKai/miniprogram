@@ -1,0 +1,130 @@
+.history-page {
+  min-height: 100vh;
+  padding: 24rpx 32rpx 48rpx;
+  box-sizing: border-box;
+  background: #f8fafc;
+}
+
+.loading-wrap {
+  padding: 120rpx 0;
+  text-align: center;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #717182;
+}
+
+.empty-card {
+  margin-top: 120rpx;
+  text-align: center;
+  padding: 48rpx 32rpx;
+}
+
+.empty-icon {
+  display: block;
+  font-size: 72rpx;
+  margin-bottom: 16rpx;
+}
+
+.empty-text {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #030213;
+}
+
+.empty-sub {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #717182;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(15, 23, 42, 0.06);
+}
+
+.history-thumb {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.history-icon {
+  font-size: 40rpx;
+}
+
+.history-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.history-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #030213;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-status {
+  font-size: 22rpx;
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+
+.history-preview {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #717182;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-meta {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+.meta-dot {
+  margin: 0 8rpx;
+}
+
+.history-arrow {
+  font-size: 36rpx;
+  color: #cbd5e1;
+  flex-shrink: 0;
+}

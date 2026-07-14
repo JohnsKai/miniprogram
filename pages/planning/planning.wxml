@@ -105,6 +105,21 @@
             </view>
           </view>
         </view>
+        <view wx:if="{{narrateVisible}}" class="msg-row msg-row-assistant msg-row-route" id="narrate-panel">
+          <view class="avatar avatar-ai">✨</view>
+          <view class="route-wrap">
+            <md-stream-panel
+              visible="{{narrateVisible}}"
+              streaming="{{narrateStreaming}}"
+              thinkText="{{narrateThinkText}}"
+              hasThink="{{narrateHasThink}}"
+              hasContent="{{narrateHasContent}}"
+              hasReferences="{{narrateHasReferences}}"
+              contentNodes="{{narrateContentNodes}}"
+              referencesNodes="{{narrateReferencesNodes}}"
+            />
+          </view>
+        </view>
         <view class="chat-bottom-space"></view>
       </view>
     </scroll-view>
@@ -114,7 +129,7 @@
         <text class="intake-progress-text">{{intakeProgressLabel}}</text>
         <text wx:if="{{questionCategoryLabel}}" class="intake-category-text">当前：{{questionCategoryLabel}}</text>
       </view>
-      <view wx:if="{{planDegraded && degradedHint}}" class="degraded-hint-bar">
+      <view wx:if="{{planDegraded && degradedHint && (planComplete || days.length)}}" class="degraded-hint-bar">
         <text class="degraded-hint-text">⚠ {{degradedHint}}</text>
       </view>
       <view wx:if="{{planStepsHint}}" class="plan-steps-hint-bar">
@@ -123,7 +138,7 @@
       <view wx:if="{{showInterruptBanner}}" class="interrupt-banner" bindtap="onRetry">
         <text class="interrupt-banner-text">{{interruptBannerText}}</text>
       </view>
-      <view wx:if="{{awaitingReply && askOptions.length}}" class="ask-options">
+      <view wx:if="{{awaitingReply && askOptions.length && !isThinking && planningPhase !== 'planning' && planningPhase !== 'done'}}" class="ask-options">
         <view
           wx:for="{{askOptions}}"
           wx:key="*this"

@@ -3,6 +3,7 @@
   "navigationStyle": "custom",
   "usingComponents": {
     "day-card": "/components/day-card/day-card",
-    "session-sidebar": "/components/session-sidebar/session-sidebar"
+    "session-sidebar": "/components/session-sidebar/session-sidebar",
+    "md-stream-panel": "/components/md-stream-panel/md-stream-panel"
   }
 }

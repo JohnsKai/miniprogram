@@ -66,6 +66,7 @@
 | day-card | `components/day-card/` | 单日行程卡片 |
 | new-session-sheet | `components/new-session-sheet/` | 新建会话弹层（较少用） |
 | ask-panel | `components/ask-panel/` | 占位，提问已迁到 planning 底部输入栏 |
+| md-stream-panel | `components/md-stream-panel/` | §18 展示流三区（思考 / MD / 引用），节流节点入 rich-text |
 
 ---
 
@@ -74,9 +75,10 @@
 | 文件 | 职责 |
 |------|------|
 | `api.js` | REST + 登录；dev `http://{DEV_LAN_HOST}:{DEV_SERVICE_PORT}`，prod 占位 `api.example.com` |
-| `stream.js` | SSE 流式（`enableChunked` + `onChunkReceived`，真机 iOS/Android 兼容） |
+| `stream.js` | SSE 流式（`enableChunked` + `onChunkReceived`；§18 `markdown`/`done`/`error` + narrate） |
+| `stream-md.js` | §18 分区标签增量解析、MD 节流、XSS/链接限制 |
 | `session-store.js` | 会话本地存储 + 远端同步，远端失败降级本地 |
-| `plan-json.js` | **主路径**：行程 JSON 归一化、unwrap、流 buffer 解析 |
+| `plan-json.js` | **权威数据轨**：行程 JSON 归一化（天卡片唯一来源） |
 | `parser.js` | Markdown/纯文本行程解析（**当前未被引用**，保留作备用） |
 | `safe-area.js` | 状态栏 / 胶囊 / 底部安全区 |
 | `logger.js` | 调试日志（对齐服务端 plan 完成格式） |
@@ -91,6 +93,7 @@
 |------|------|------|
 | POST | `/auth/login` | `wx.login` code 换 token |
 | POST | `/plan` | 流式规划（SSE，由 `stream.js` 调用） |
+| POST | `/plan/narrate` | §18 展示流 Raw MD（前端已接；后端未上线时静默失败） |
 | GET | `/plan/result` | 拉取最终结构化行程 |
 | GET | `/ask-query` | 轮询待回答追问 |
 | POST | `/user-input` | 提交用户回答 |
@@ -259,6 +262,7 @@ images/           # Tab SVG + send 图标
 | 改会话/历史 | `utils/session-store.js` |
 | 改 API | `utils/api.js` + `app.js` 环境变量 |
 | 改流式/SSE | `utils/stream.js` |
+| 改展示流 MD 解析/节流 | `utils/stream-md.js`、`components/md-stream-panel` |
 | 改行程解析 | `utils/plan-json.js` |
 | 适配真机 | `utils/safe-area.js`、`initNavLayout()`、`env(safe-area-inset-bottom)` |
 

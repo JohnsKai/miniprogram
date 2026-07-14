@@ -263,6 +263,17 @@ function planStream(data) {
   }
 }
 
+/**
+ * §18 展示流 narrate（权威 JSON 仍走 getResult；此处仅 Raw MD）
+ */
+function narrateStream(data) {
+  return {
+    url: resolveUrl('/plan/narrate'),
+    data,
+    header: buildHeaders()
+  }
+}
+
 const api = {
   getBaseUrl,
   getToken,
@@ -275,6 +286,10 @@ const api = {
 
   plan(data) {
     return planStream(data)
+  },
+
+  narrate(data) {
+    return narrateStream(data)
   },
 
   createSession(data) {

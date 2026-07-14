@@ -1,12 +1,21 @@
 const api = require('../../utils/api')
 const resolvePlanningPhase = api.resolvePlanningPhase
 const isReplanConfirmMeta = api.isReplanConfirmMeta
-const { createStreamRequest } = require('../../utils/stream')
-const { normalizePlan, planToPlainText, extractPlanFromResponse, hasRenderableContent } = require('../../utils/plan-json')
+const { createStreamRequest, createNarrateStreamRequest } = require('../../utils/stream')
+const { normalizePlan, planToPlainText, extractPlanFromResponse, hasRenderableContent, hasRenderableDay } = require('../../utils/plan-json')
+const {
+  createTagPartitionParser,
+  createThrottledRenderer,
+  buildNarrateViewModel
+} = require('../../utils/stream-md')
 const logger = require('../../utils/logger')
 const sessionStore = require('../../utils/session-store')
 const sessionMessages = require('../../utils/session-messages')
 const tripProfileUtil = require('../../utils/trip-profile')
+const {
+  isSupplementConfirmedAnswer,
+  canReopenIntakeForLiveQuestion
+} = require('../../utils/intake-gates')
 
 function fingerprintTripProfile(profile) {
   if (typeof tripProfileUtil.tripProfileFingerprint === 'function') {
@@ -33,7 +42,7 @@ const ASK_POLL_IDLE_TIMEOUT = 30000
 const PLANNING_STATE_KEY = 'planning_state'
 const PLANNING_RESULT_KEY = 'planning_result'
 const RESULT_FETCH_TIMEOUT = 5000
-const PLANNING_WATCHDOG_MS = 60000
+const PLANNING_WATCHDOG_MS = 120000
 const RECONNECT_BASE_MS = 2000
 const PLAN_RETRY_DELAY = 2000
 const RECONNECT_MAX_MS = 60000
@@ -124,13 +133,6 @@ function buildDurationChangeQuery(text, duration) {
   return `${text}（请严格按${duration.days}天${nightsPart}重新安排行程，更新 summary 与每日 day 数量，勿保留原天数结构）`
 }
 
-function isSupplementConfirmedAnswer(text, category) {
-  const t = (text || '').trim()
-  if (!t) return false
-  if (category === 'supplement') return true
-  return /^(没有|无补充|没有了|没有补充|没有问题了|就这些|就这些吧|开始规划)/.test(t)
-}
-
 Page({
   data: {
     messages: [],
@@ -176,6 +178,15 @@ Page({
     planningPhase: '',
     planDegraded: false,
     degradedHint: '',
+    // §18 双轨展示流（F-91）：权威行程仍用 days；本块仅 MD 阅读态
+    narrateVisible: false,
+    narrateStreaming: false,
+    narrateThinkText: '',
+    narrateHasThink: false,
+    narrateHasContent: false,
+    narrateHasReferences: false,
+    narrateContentNodes: [],
+    narrateReferencesNodes: [],
     statusBarHeight: 20,
     navBarHeight: 64,
     navContentHeight: 44,
@@ -188,6 +199,10 @@ Page({
   _streamBuffer: '',
   _isPageActive: true,
   _persistTimer: null,
+  _narrateParser: null,
+  _narrateRenderer: null,
+  _narrateTask: null,
+  _progressPlanTimer: null,
 
   _msgSeq: 0,
   _requestTask: null,
@@ -958,11 +973,23 @@ Page({
       return !this.data.postPlanChat && !this.data.planComplete
     }
     if (this.data.postPlanChat || this.data.planComplete) return false
-    const serverPhase = resolvePlanningPhase({ planningPhase: this.data.planningPhase })
+    const serverPhase = resolvePlanningPhase({
+      planningPhase: (sync && sync.planningPhase) || this.data.planningPhase
+    })
     if (serverPhase === 'planning' || serverPhase === 'done') return false
     if (isPlanStepsBlockingIntake(this.data.planSteps)) return false
     const liveQuestion = meta.liveQuestion || !!(meta.sync && meta.sync.hasQuestion)
     if (liveQuestion || this.isIntakeNeedsContinuation()) {
+      if (!canReopenIntakeForLiveQuestion({
+        intakePhaseDone: this._intakePhaseDone,
+        intakeIncomplete: this.isIntakeIncomplete(),
+        planningPhase: serverPhase || this.data.planningPhase,
+        planComplete: this.data.planComplete,
+        postPlanChat: this.data.postPlanChat,
+        isThinking: this.data.isThinking
+      })) {
+        return false
+      }
       if (this._intakePhaseDone) {
         this._intakePhaseDone = false
         this.stopPlanningWatchdog()
@@ -991,6 +1018,7 @@ Page({
     const tp = (this.data.preferences || {}).tripProfile
     if (tp) this._tripProfileFingerprint = fingerprintTripProfile(tp)
     this.clearIntakeProgressUi()
+    this.clearAskReplyUi()
     if (entering && !options.skipWatchdog && !this.data.planComplete) {
       this.startPlanningWatchdog()
     }
@@ -998,6 +1026,18 @@ Page({
       this.setData({ planningPhase: 'planning' })
       logger.log('planning', `INTAKE 结束 → 规划阶段 reason=${reason || '-'} sessionId=${this.data.sessionId}`)
     }
+  },
+
+  clearAskReplyUi() {
+    this.setData({
+      awaitingReply: false,
+      askOptions: [],
+      questionCategory: '',
+      questionCategoryLabel: '',
+      inputPlaceholder: (this.data.postPlanChat || this.data.planComplete)
+        ? '继续提问，或要求调整方案…'
+        : '输入消息...'
+    })
   },
 
   reopenIntakeForProfileChange() {
@@ -1447,6 +1487,11 @@ Page({
 
   activatePendingIntakeQuestion(meta) {
     meta = meta || {}
+    if (!this.canPresentIntakeQuestion({ ...meta, fromRecovery: true, liveQuestion: true })) {
+      logger.log('intake', '规划已启动，忽略恢复待答快捷按钮')
+      this.clearAskReplyUi()
+      return false
+    }
     const pendingMsg = this.getPendingIntakeQuestionMessage()
     if (!pendingMsg) return false
     const question = String(pendingMsg.content || '').trim()
@@ -1567,6 +1612,10 @@ Page({
       return
     }
     if (sync && sync.hasQuestion && sync.question && this.isStaleIntakeQuestion(sync, answeredQuestionId)) {
+      if (!this.canPresentIntakeQuestion({ liveQuestion: true, sync })) {
+        this.clearAskReplyUi()
+        return
+      }
       if (this.activatePendingIntakeQuestion({
         options: sync.options || [],
         questionId: sync.questionId || '',
@@ -2368,7 +2417,9 @@ Page({
     return base
   },
 
-  buildPlanMessageBatch(summary, days) {
+  buildPlanMessageBatch(summary, days, options) {
+    options = options || {}
+    const includeFooter = options.includeFooter !== false
     const hasRenderablePlan = hasRenderableContent({ summary, days })
     const batch = []
     const pushBatch = (msg) => {
@@ -2388,7 +2439,7 @@ Page({
       content: this.buildPlanIntroText(),
       summary,
       days,
-      footer: this.buildPlanFooterText()
+      footer: includeFooter ? this.buildPlanFooterText() : ''
     })
     return { batch, hasRenderablePlan }
   },
@@ -2438,8 +2489,120 @@ Page({
       this.persistActiveSession()
       this.savePlanningState('done')
       this.startPolling()
+      // 不再自动 POST /plan/narrate：天卡片 + summary 已是完整权威展示；
+      // 模板 narrate 内容与 summary 高度重复，会造成「行程解读」二次插入。
+      // 需要阅读稿时再显式调用 startNarrateStream()。
     }
     this.refreshShellUI()
+  },
+
+  /**
+   * §18：展示轨 narrate（可选）。天卡片仍只读 plan/result。
+   * 默认不在出方案后自动调用，避免与 route 卡片重复展示。
+   */
+  startNarrateStream() {
+    const sessionId = this.data.sessionId
+    if (!sessionId || !this._isPageActive) return
+    this.stopNarrateStream()
+    this._narrateParser = createTagPartitionParser()
+    this._narrateRenderer = createThrottledRenderer({
+      intervalMs: 80,
+      onRender: (snap) => this.applyNarrateSnapshot(snap)
+    })
+    this.setData({
+      narrateVisible: true,
+      narrateStreaming: true,
+      narrateThinkText: '',
+      narrateHasThink: false,
+      narrateHasContent: false,
+      narrateHasReferences: false,
+      narrateContentNodes: [],
+      narrateReferencesNodes: [],
+      scrollTo: 'narrate-panel'
+    })
+    this._narrateTask = createNarrateStreamRequest({
+      data: { sessionId },
+      silentHttpError: true,
+      onMarkdown: (chunk) => this.feedNarrateChunk(chunk),
+      onMeta: (meta) => {
+        if (meta && (meta.traceId || meta.trace_id)) {
+          this.applyServerTraceId(meta.traceId || meta.trace_id)
+        }
+      },
+      onDone: () => this.finishNarrateStream(),
+      onStreamError: (err) => {
+        logger.log('narrate', `SSE error ${(err && err.message) || ''}`)
+        this.finishNarrateStream()
+      },
+      onComplete: () => this.finishNarrateStream(),
+      onError: (err) => {
+        const code = err && err.statusCode
+        logger.log('narrate', `不可用 status=${code || ''}（后端未上线则忽略）`)
+        this.setData({
+          narrateStreaming: false,
+          narrateVisible: !!(this.data.narrateHasContent || this.data.narrateHasThink)
+        })
+        this.stopNarrateStream({ keepUi: true })
+      }
+    })
+  },
+
+  feedNarrateChunk(chunk) {
+    if (!this._narrateParser || !chunk) return
+    const snap = this._narrateParser.feed(chunk)
+    if (this._narrateRenderer) this._narrateRenderer.schedule(snap)
+  },
+
+  applyNarrateSnapshot(snap) {
+    if (!snap || !this._isPageActive) return
+    const vm = buildNarrateViewModel(snap)
+    // 模板 think「正在整理行程阅读稿…」不是用户可读的思考过程，有正文后收起
+    const thinkIsStatus = /正在(整理|生成)行程阅读稿/.test(vm.thinkText || '')
+    const showThink = vm.hasThink && !(thinkIsStatus && vm.hasContent)
+    this.setData({
+      narrateThinkText: showThink ? vm.thinkText : '',
+      narrateHasThink: showThink,
+      narrateHasContent: vm.hasContent,
+      narrateHasReferences: vm.hasReferences,
+      narrateContentNodes: vm.contentNodes,
+      narrateReferencesNodes: vm.referencesNodes,
+      narrateVisible: !!(showThink || vm.hasContent || vm.hasReferences)
+    })
+  },
+
+  finishNarrateStream() {
+    if (this._narrateParser) {
+      const snap = this._narrateParser.finish()
+      if (this._narrateRenderer) this._narrateRenderer.flush(snap)
+      else this.applyNarrateSnapshot(snap)
+    }
+    this.setData({ narrateStreaming: false })
+    this._narrateTask = null
+  },
+
+  stopNarrateStream(options) {
+    options = options || {}
+    if (this._narrateTask && typeof this._narrateTask.abort === 'function') {
+      try { this._narrateTask.abort() } catch (e) { /* ignore */ }
+    }
+    this._narrateTask = null
+    if (this._narrateRenderer) {
+      this._narrateRenderer.dispose()
+      this._narrateRenderer = null
+    }
+    this._narrateParser = null
+    if (!options.keepUi) {
+      this.setData({
+        narrateVisible: false,
+        narrateStreaming: false,
+        narrateThinkText: '',
+        narrateHasThink: false,
+        narrateHasContent: false,
+        narrateHasReferences: false,
+        narrateContentNodes: [],
+        narrateReferencesNodes: []
+      })
+    }
   },
 
   schedulePlanRetry() {
@@ -2508,6 +2671,11 @@ Page({
     this.stopAskPollingPermanently()
     this.stopFinishCheck()
     this.clearPollIdleTimer()
+    if (this._progressPlanTimer) {
+      clearTimeout(this._progressPlanTimer)
+      this._progressPlanTimer = null
+    }
+    this.stopNarrateStream()
     this.flushPersistActiveSession()
     if (this._requestTask && this._requestTask.abort) this._requestTask.abort()
     if (this._onNetworkChange) {
@@ -2630,6 +2798,10 @@ Page({
     if (!this._intakePhaseDone && this.data.showIntakeProgress && this.data.intakeProgressLabel) {
       label = this.data.intakeProgressLabel + ' · ' + label
     }
+    // 进入规划整理态时清掉 INTAKE 快捷钮，避免「正在整理」与「没有了」并存
+    if (this._intakePhaseDone || /整理最终行程|连接规划|重新规划|重新连接|同步进度/.test(label)) {
+      this.clearAskReplyUi()
+    }
     this.pushMessage({
       role: 'assistant',
       type: 'thinking',
@@ -2644,6 +2816,7 @@ Page({
     this._planSyncMode = false
     this._lastPhaseKey = ''
     this.clearReconnectTimer()
+    this.stopNarrateStream()
     const incremental = streamOptions.incremental === true
     const resolvedUserId = userId || getApp().getUserId()
 
@@ -2823,7 +2996,14 @@ Page({
             this.activatePendingIntakeQuestion(askMeta)
           } else if (q !== this.getLastIntakeQuestion() || !this.data.awaitingReply) {
             this.presentIntakeQuestion(parsed.question, askMeta)
-          } else {
+          } else if (canReopenIntakeForLiveQuestion({
+            intakePhaseDone: this._intakePhaseDone,
+            intakeIncomplete: this.isIntakeIncomplete(),
+            planningPhase: this.data.planningPhase,
+            planComplete: this.data.planComplete,
+            postPlanChat: this.data.postPlanChat,
+            isThinking: this.data.isThinking
+          })) {
             this.setData({
               awaitingReply: true,
               inputPlaceholder: '请输入您的回答',
@@ -2831,6 +3011,8 @@ Page({
               questionCategory: parsed.questionCategory || '',
               questionCategoryLabel: tripProfileUtil.categoryLabel(parsed.questionCategory)
             })
+          } else {
+            this.clearAskReplyUi()
           }
           return
         }
@@ -3042,6 +3224,10 @@ Page({
     this._streamHttpDone = true
     this.clearReconnectTimer()
     this._reconnectAttempt = 0
+    if (this._progressPlanTimer) {
+      clearTimeout(this._progressPlanTimer)
+      this._progressPlanTimer = null
+    }
     logger.log('stream', `HTTP 流结束 userId=${this.data.userId}, bufferLen=${(this._streamBuffer || '').length}`)
     this.setData({ showInterruptBanner: false, interruptBannerText: '' })
     const fromBuffer = this.resolvePlanFromBuffer()
@@ -3172,6 +3358,77 @@ Page({
   appendBuffer(text) {
     if (!text) return
     this._streamBuffer += text
+    this.scheduleProgressivePlanRender()
+  },
+
+  scheduleProgressivePlanRender() {
+    if (this._progressPlanTimer) return
+    this._progressPlanTimer = setTimeout(() => {
+      this._progressPlanTimer = null
+      this.tryProgressivePlanRender()
+    }, 200)
+  },
+
+  tryProgressivePlanRender() {
+    if (!this._isPageActive || this._streamEnded || this._streamHttpDone || this.data.planComplete) return
+    if (this._renderingPlan || this.isIntakeIncomplete()) return
+    const plan = normalizePlan(this._streamBuffer || '')
+    const days = (plan.days || []).filter(hasRenderableDay)
+    const summary = (plan.summary || '').trim()
+    if (!days.length) return
+    this.applyStreamingPlanPreview(summary, days)
+  },
+
+  /**
+   * 流式增量：只更新天卡片，不挂 footer，不算 planComplete。
+   */
+  applyStreamingPlanPreview(summary, days) {
+    const prevLen = (this.data.days && this.data.days.length) || 0
+    if (days.length < prevLen) return
+    if (days.length === prevLen && summary === (this.data.summary || '')) return
+
+    let messages = (this.data.messages || []).filter(
+      (m) => m.type !== 'thinking' && m.type !== 'phase'
+    )
+    let routeIdx = -1
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].type === 'route' && messages[i].planBlock) {
+        routeIdx = i
+        break
+      }
+    }
+    const routeMsg = {
+      id: routeIdx >= 0 ? messages[routeIdx].id : this.nextMsgId(),
+      role: 'assistant',
+      type: 'route',
+      planBlock: true,
+      streaming: true,
+      content: this.buildPlanIntroText(),
+      summary: summary || this.data.summary || '',
+      days,
+      footer: ''
+    }
+    if (routeIdx >= 0) messages[routeIdx] = routeMsg
+    else messages.push(routeMsg)
+
+    const tipId = this.nextMsgId()
+    messages.push({
+      id: tipId,
+      role: 'assistant',
+      type: 'thinking',
+      content: '正在生成后续行程…'
+    })
+    this.setData({
+      messages,
+      summary: routeMsg.summary,
+      days,
+      scrollTo: tipId,
+      isThinking: true,
+      planComplete: false,
+      postPlanChat: false,
+      inputPlaceholder: '行程生成中…'
+    })
+    this.data.messages = messages
   },
 
   resolvePlanFromBuffer() {
@@ -3198,6 +3455,11 @@ Page({
     options = options || {}
     const forceFinalize = !!options.forceFinalize
     if (this._renderingPlan) return
+    // 流仍在灌：禁止用半截 buffer finalize（否则 summary-only 会提前挂 footer）
+    if (!forceFinalize && !this._streamHttpDone) {
+      logger.log('plan/result', `流未结束，跳过提前 finalize sessionId=${this.data.sessionId}`)
+      return
+    }
     if (this.isIntakeIncomplete() || this.isWaitingForUserAnswer()) {
       logger.log('plan/result', `intake 未完成，跳过拉取 sessionId=${this.data.sessionId}`)
       return
@@ -3309,7 +3571,9 @@ Page({
       this.stripInProgressPlanShell()
     }
 
-    const { batch, hasRenderablePlan: ready } = this.buildPlanMessageBatch(summary, days)
+    const { batch, hasRenderablePlan: ready } = this.buildPlanMessageBatch(summary, days, {
+      includeFooter: true
+    })
     if (!ready) {
       this.applyPlanMessages(batch, summary, days, false)
       this._renderingPlan = false
@@ -3319,12 +3583,16 @@ Page({
       return
     }
 
+    if (this._progressPlanTimer) {
+      clearTimeout(this._progressPlanTimer)
+      this._progressPlanTimer = null
+    }
     this._streamEnded = true
     if (this._planDegraded) {
       this.applyDegradedState(true)
     }
     this.setData({ planningPhase: 'done' })
-    this.applyPlanMessages(batch, summary, days, true, { replacePlan: isRefresh })
+    this.applyPlanMessages(batch, summary, days, true, { replacePlan: true })
     this._renderingPlan = false
   },
 

@@ -1,0 +1,48 @@
+.md-stream-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fafafa;
+  border-radius: 12px;
+  border: 1px solid #ececec;
+}
+
+.md-zone-label {
+  display: block;
+  font-size: 12px;
+  color: #8a8a8a;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.md-think-text {
+  display: block;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.md-zone-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.md-zone-refs {
+  padding-top: 4px;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.md-rich {
+  font-size: 14px;
+  color: #1f2937;
+  word-break: break-word;
+}
+
+.md-pending-text {
+  font-size: 13px;
+  color: #9ca3af;
+}

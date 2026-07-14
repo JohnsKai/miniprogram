@@ -1,3 +1,7 @@
+/**
+ * §18 权威数据轨：天卡片 / 地图坐标只来自 GET /plan/result（normalizePlan）。
+ * 展示轨 Markdown（narrate / stream-md）禁止写入本页 days。
+ */
 const api = require('../../utils/api')
 const { normalizePlan, planToPlainText, extractPlanFromResponse, hasRenderableContent } = require('../../utils/plan-json')
 

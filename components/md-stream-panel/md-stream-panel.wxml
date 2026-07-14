@@ -1,0 +1,20 @@
+<view class="md-stream-panel" wx:if="{{visible}}">
+  <view wx:if="{{hasThink}}" class="md-zone md-zone-think">
+    <text class="md-zone-label">思考过程</text>
+    <text class="md-think-text">{{thinkText}}</text>
+  </view>
+
+  <view wx:if="{{hasContent}}" class="md-zone md-zone-content">
+    <text class="md-zone-label">行程解读</text>
+    <rich-text class="md-rich" nodes="{{contentNodes}}"></rich-text>
+  </view>
+
+  <view wx:if="{{hasReferences}}" class="md-zone md-zone-refs">
+    <text class="md-zone-label">参考链接</text>
+    <rich-text class="md-rich" nodes="{{referencesNodes}}"></rich-text>
+  </view>
+
+  <view wx:if="{{streaming && !hasContent && !hasThink}}" class="md-zone md-zone-pending">
+    <text class="md-pending-text">正在生成解读…</text>
+  </view>
+</view>

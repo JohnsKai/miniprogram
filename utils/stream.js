@@ -69,13 +69,18 @@ function extractStreamContent(raw) {
 
 /**
  * 解析 SSE 格式 chunk，去除 data: 前缀后逐段回调
- * 兼容 plain text SSE、DeepSeek JSON SSE 与 event: meta
+ * 兼容 plain text SSE、DeepSeek JSON SSE 与 event: meta / phase / degraded
+ * §18：event: markdown（展示正文 Raw，禁止再 JSON.parse）/ done / error
  */
 function createSSEParser(handlers) {
   const onData = typeof handlers === 'function' ? handlers : handlers.onData
   const onMeta = typeof handlers === 'function' ? null : handlers.onMeta
   const onPhase = typeof handlers === 'function' ? null : handlers.onPhase
   const onDegraded = typeof handlers === 'function' ? null : handlers.onDegraded
+  const onMarkdown = typeof handlers === 'function' ? null : handlers.onMarkdown
+  const onDone = typeof handlers === 'function' ? null : handlers.onDone
+  const onStreamError = typeof handlers === 'function' ? null : handlers.onStreamError
+  const presentationMode = !!(typeof handlers === 'object' && handlers && handlers.presentationMode)
   let lineBuffer = ''
   let currentEvent = ''
 
@@ -111,8 +116,39 @@ function createSSEParser(handlers) {
     }
   }
 
+  function emitMarkdownRaw(payload) {
+    if (payload == null || payload === '[DONE]') return
+    // §18.4：展示正文禁止 JSON.parse；直接透传
+    if (onMarkdown) onMarkdown(payload)
+    else if (onData) onData(payload)
+  }
+
+  function emitDone(payload) {
+    if (onDone) onDone(payload == null ? '' : payload)
+  }
+
+  function emitStreamError(payload) {
+    if (!onStreamError) return
+    let err = { message: String(payload || 'stream error') }
+    try {
+      const obj = JSON.parse(payload)
+      if (obj && typeof obj === 'object') err = obj
+    } catch (e) { /* use raw */ }
+    onStreamError(err)
+  }
+
   function emitDataLine(payload) {
-    if (!payload || payload === '[DONE]') return
+    // event: done 允许空 data
+    if (currentEvent === 'done') {
+      emitDone(payload == null ? '' : payload)
+      resetEvent()
+      return
+    }
+
+    if (!payload || payload === '[DONE]') {
+      if (payload === '[DONE]') emitDone('')
+      return
+    }
 
     if (currentEvent === 'meta') {
       emitMeta(payload)
@@ -128,6 +164,25 @@ function createSSEParser(handlers) {
 
     if (currentEvent === 'degraded') {
       emitDegraded(payload)
+      resetEvent()
+      return
+    }
+
+    if (currentEvent === 'markdown') {
+      emitMarkdownRaw(payload)
+      resetEvent()
+      return
+    }
+
+    if (currentEvent === 'error') {
+      emitStreamError(payload)
+      resetEvent()
+      return
+    }
+
+    // 展示通道（narrate）：default data 一律当 Raw 文本，禁止走 extractStreamContent
+    if (presentationMode) {
+      emitMarkdownRaw(payload)
       resetEvent()
       return
     }
@@ -149,9 +204,8 @@ function createSSEParser(handlers) {
     const content = extractStreamContent(payload)
     if (!content) return
 
-    const isJsonLine = trimmedPayload.startsWith('{') || trimmedPayload.startsWith('[')
-    const out = isJsonLine ? content : (content + '\n')
-    if (onData) onData(out)
+    // 流式 token 禁止自动追加 \\n：会导致 JSON 字符串内出现未转义换行从而 parse 失败
+    if (onData) onData(content)
   }
 
   function emitLine(line) {
@@ -193,19 +247,50 @@ function createSSEParser(handlers) {
 
 /**
  * 创建流式 POST 请求
+ * @param {object} opts
+ * @param {boolean} [opts.presentationMode] §18 展示通道：data 不走 JSON 解包
+ * @param {function} [opts.onMarkdown] event:markdown 或 presentation raw
+ * @param {function} [opts.onDone] event:done
+ * @param {function} [opts.onStreamError] event:error（SSE 业务错，非网络）
+ * @param {boolean} [opts.silentHttpError] 失败不 toast（narrate 可选）
  */
-function createStreamRequest({ url, data, onData, onMeta, onPhase, onDegraded, onStatusChange, onComplete, onError }) {
-  const planConfig = url ? { url: api.resolveUrl(url), data, header: api.buildHeaders() } : api.plan(data)
+function createStreamRequest(opts) {
+  const {
+    url,
+    data,
+    onData,
+    onMeta,
+    onPhase,
+    onDegraded,
+    onMarkdown,
+    onDone,
+    onStreamError,
+    onStatusChange,
+    onComplete,
+    onError,
+    presentationMode,
+    silentHttpError
+  } = opts || {}
+  const planConfig = url
+    ? { url: api.resolveUrl(url), data, header: api.buildHeaders() }
+    : api.plan(data)
   const fullUrl = planConfig.url
   const header = planConfig.header
   const body = planConfig.data || data
   let chunkCount = 0
   let totalChars = 0
+  let doneSignaled = false
 
   const wrappedOnData = (chunk) => {
     chunkCount += 1
     totalChars += (chunk || '').length
     if (onData) onData(chunk)
+  }
+  const wrappedOnMarkdown = (chunk) => {
+    chunkCount += 1
+    totalChars += (chunk || '').length
+    if (onMarkdown) onMarkdown(chunk)
+    else if (onData) onData(chunk)
   }
   const wrappedOnMeta = (meta) => {
     logger.log('stream', `meta event traceId=${(meta && (meta.traceId || meta.trace_id)) || ''}`)
@@ -220,18 +305,31 @@ function createStreamRequest({ url, data, onData, onMeta, onPhase, onDegraded, o
     logger.log('stream', `degraded event reason=${(payload && payload.reason) || ''}`)
     if (onDegraded) onDegraded(payload)
   }
+  const wrappedOnDone = (payload) => {
+    doneSignaled = true
+    logger.log('stream', 'done event')
+    if (onDone) onDone(payload)
+  }
+  const wrappedOnStreamError = (payload) => {
+    logger.log('stream', `error event message=${(payload && payload.message) || ''}`)
+    if (onStreamError) onStreamError(payload)
+  }
   const sseParserWrapped = createSSEParser({
     onData: wrappedOnData,
     onMeta: wrappedOnMeta,
     onPhase: wrappedOnPhase,
-    onDegraded: wrappedOnDegraded
+    onDegraded: wrappedOnDegraded,
+    onMarkdown: wrappedOnMarkdown,
+    onDone: wrappedOnDone,
+    onStreamError: wrappedOnStreamError,
+    presentationMode: !!presentationMode
   })
 
   if (onStatusChange) {
     onStatusChange('正在连接 AI 旅行师...')
   }
 
-  logger.log('stream', `开始请求 ${fullUrl}, userId=${body.userId || ''}`)
+  logger.log('stream', `开始请求 ${fullUrl}, userId=${body.userId || ''}, presentation=${!!presentationMode}`)
 
   let settled = false
 
@@ -245,7 +343,7 @@ function createStreamRequest({ url, data, onData, onMeta, onPhase, onDegraded, o
     success(res) {
       if (res.statusCode === 401) {
         api.refreshToken().then(() => {
-          createStreamRequest({ url, data, onData, onMeta, onPhase, onDegraded, onStatusChange, onComplete, onError })
+          createStreamRequest(opts)
         }).catch(() => {
           if (onStatusChange) onStatusChange('连接失败')
           if (onError) onError(new Error('认证失败'))
@@ -256,6 +354,7 @@ function createStreamRequest({ url, data, onData, onMeta, onPhase, onDegraded, o
       if (res.statusCode === 200) {
         settled = true
         sseParserWrapped.flush()
+        if (!doneSignaled && onDone) onDone('')
         logger.log('stream', `请求完成 userId=${body.userId || ''}, chunks=${chunkCount}, chars=${totalChars}`)
         if (onStatusChange) onStatusChange('规划完成')
         if (onComplete) onComplete()
@@ -270,7 +369,8 @@ function createStreamRequest({ url, data, onData, onMeta, onPhase, onDegraded, o
           err.message = err.body.message || err.body.error
         }
         // 409/422：由 planning 页处理，勿 toast 误导用户
-        if (res.statusCode !== 409 && res.statusCode !== 422) {
+        // narrate 404/未上线：silentHttpError 时不打扰
+        if (!silentHttpError && res.statusCode !== 409 && res.statusCode !== 422) {
           wx.showToast({ title: '规划请求失败', icon: 'none' })
         }
         if (onError) onError(err)
@@ -284,7 +384,9 @@ function createStreamRequest({ url, data, onData, onMeta, onPhase, onDegraded, o
       settled = true
       logger.log('stream', `网络失败 userId=${body.userId || ''}, err=${err && err.errMsg}`)
       if (onStatusChange) onStatusChange('连接失败')
-      wx.showToast({ title: '网络连接失败', icon: 'none' })
+      if (!silentHttpError) {
+        wx.showToast({ title: '网络连接失败', icon: 'none' })
+      }
       if (onError) onError(err)
     }
   })
@@ -299,8 +401,23 @@ function createStreamRequest({ url, data, onData, onMeta, onPhase, onDegraded, o
   return requestTask
 }
 
+/**
+ * §18 F-92：POST /plan/narrate 展示流（presentationMode）
+ * 后端未上线时调用方应 silent + 忽略 404
+ */
+function createNarrateStreamRequest(opts) {
+  const data = (opts && opts.data) || {}
+  return createStreamRequest(Object.assign({}, opts, {
+    url: '/plan/narrate',
+    data,
+    presentationMode: true,
+    silentHttpError: opts && opts.silentHttpError !== false
+  }))
+}
+
 module.exports = {
   createStreamRequest,
+  createNarrateStreamRequest,
   decodeChunk,
   createSSEParser,
   extractStreamContent

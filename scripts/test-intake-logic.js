@@ -11,8 +11,8 @@ global.wx = {
 const sessionMessages = require('../utils/session-messages')
 const sessionStore = require('../utils/session-store')
 const api = require('../utils/api')
-
 const tripProfile = require('../utils/trip-profile')
+const intakeGates = require('../utils/intake-gates')
 
 function testIntakeProgressComplete() {
   assert.strictEqual(tripProfile.isIntakeProgressComplete({ filled: 7, total: 7 }), true)
@@ -49,6 +49,52 @@ function testStaleByQuestionId() {
   const sync2 = { question: '计划什么时候出发？', questionId: 'q_timing_1' }
   assert.strictEqual(sync2.questionId === answeredId, false)
   console.log('OK isStaleIntakeQuestion 按 questionId 判定')
+}
+
+function testEstimateIntakeProgressFromDialog() {
+  const messages = [
+    { role: 'user', type: 'text', content: '北京3天' },
+    { role: 'assistant', type: 'text', content: '请问您这次是哪种出行方式？' },
+    { role: 'user', type: 'text', content: '一人，从杭州坐飞机出发' },
+    { role: 'assistant', type: 'text', content: '您计划大概什么月份出发？' }
+  ]
+  const p = tripProfile.estimateIntakeProgressFromDialog(messages)
+  assert.strictEqual(p.filled, 2)
+  assert.strictEqual(p.total, 7)
+  console.log('OK estimateIntakeProgressFromDialog')
+}
+
+function testSupplementConfirmedPhrases() {
+  assert.strictEqual(intakeGates.isSupplementConfirmedAnswer('没有了', ''), true)
+  assert.strictEqual(intakeGates.isSupplementConfirmedAnswer('可以开始规划', ''), true)
+  assert.strictEqual(intakeGates.isSupplementConfirmedAnswer('随便聊聊', ''), false)
+  assert.strictEqual(intakeGates.isSupplementConfirmedAnswer('随便', 'supplement'), true)
+  console.log('OK isSupplementConfirmedAnswer phrases')
+}
+
+function testCannotReopenAskWhenPlanning() {
+  assert.strictEqual(intakeGates.canReopenIntakeForLiveQuestion({
+    intakePhaseDone: true,
+    intakeIncomplete: false,
+    planningPhase: 'planning'
+  }), false)
+  assert.strictEqual(intakeGates.shouldShowAskOptions({
+    awaitingReply: true,
+    askOptions: ['没有了', '可以开始规划'],
+    isThinking: true,
+    planningPhase: 'planning',
+    intakePhaseDone: true,
+    intakeIncomplete: false
+  }), false)
+  assert.strictEqual(intakeGates.shouldShowAskOptions({
+    awaitingReply: true,
+    askOptions: ['没有了'],
+    isThinking: false,
+    planningPhase: 'intake',
+    intakePhaseDone: false,
+    intakeIncomplete: true
+  }), true)
+  console.log('OK planning phase hides ask options')
 }
 
 async function testPruneLocalDuplicate() {
@@ -97,25 +143,13 @@ async function testPruneLocalDuplicate() {
   console.log('OK fetchHistory reconcile 去重 local+server')
 }
 
-function testEstimateIntakeProgressFromDialog() {
-  const tripProfile = require('../utils/trip-profile')
-  const messages = [
-    { role: 'user', type: 'text', content: '北京3天' },
-    { role: 'assistant', type: 'text', content: '请问您这次是哪种出行方式？' },
-    { role: 'user', type: 'text', content: '一人，从杭州坐飞机出发' },
-    { role: 'assistant', type: 'text', content: '您计划大概什么月份出发？' }
-  ]
-  const p = tripProfile.estimateIntakeProgressFromDialog(messages)
-  assert.strictEqual(p.filled, 2)
-  assert.strictEqual(p.total, 7)
-  console.log('OK estimateIntakeProgressFromDialog')
-}
-
 testIntakeProgressComplete()
 testTripProfileFingerprint()
 testEstimateIntakeProgressFromDialog()
 testMergePreservesIntakeQa()
 testStaleByQuestionId()
+testSupplementConfirmedPhrases()
+testCannotReopenAskWhenPlanning()
 testPruneLocalDuplicate().then(() => {
   console.log('\n全部通过')
 }).catch((e) => {

@@ -1,9 +1,12 @@
 /**
- * 服务端标准 JSON 行程解析与归一化
+ * 服务端标准 JSON 行程解析与归一化（权威数据轨 · §18 F-93）
  * {
  *   "summary": "行程概要",
  *   "days": [{ day, date, weather, activities, meals, hotel }]
  * }
+ *
+ * 天卡片 / 地图 / result 页 **只读本模块 + GET /plan/result**。
+ * 禁止用 narrate / Markdown 展示流（stream-md）驱动 day-card。
  */
 
 function formatWalkingDistance(val) {
@@ -87,16 +90,120 @@ function hasPlanShape(obj) {
   return obj.summary != null || Array.isArray(obj.days)
 }
 
-/** 从 markdown 或混合文本中提取 JSON 片段 */
+/** 从 markdown 或混合文本中提取 JSON 片段（优先含 summary/days 的对象） */
 function extractJsonText(text) {
   if (!text || typeof text !== 'string') return ''
-  const raw = text.trim()
+  let raw = text.trim()
   const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)
   if (fenceMatch) return fenceMatch[1].trim()
+
+  // 未闭合 ```json 围栏：去掉开头标记再继续
+  const openFence = raw.match(/```(?:json)?\s*/i)
+  if (openFence) {
+    raw = raw.slice(openFence.index + openFence[0].length).trim()
+  }
+
+  const planKey = raw.search(/\{[\s\n\r]*"(?:summary|days)"/)
+  if (planKey >= 0) {
+    const sliced = sliceBalancedObject(raw, planKey)
+    if (sliced) return sliced
+  }
+
   const start = raw.indexOf('{')
+  if (start < 0) return raw
+  const balanced = sliceBalancedObject(raw, start)
+  if (balanced) return balanced
   const end = raw.lastIndexOf('}')
-  if (start >= 0 && end > start) return raw.slice(start, end + 1)
-  return raw
+  if (end > start) return raw.slice(start, end + 1)
+  return raw.slice(start)
+}
+
+/** 从 start（须为 `{`）切出括号平衡的对象；未闭合时返回尽量长的前缀供后续修复 */
+function sliceBalancedObject(text, start) {
+  if (!text || text[start] !== '{') return ''
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < text.length; i++) {
+    const c = text[i]
+    if (escape) {
+      escape = false
+      continue
+    }
+    if (inString) {
+      if (c === '\\') escape = true
+      else if (c === '"') inString = false
+      continue
+    }
+    if (c === '"') {
+      inString = true
+      continue
+    }
+    if (c === '{') depth += 1
+    else if (c === '}') {
+      depth -= 1
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+  return text.slice(start)
+}
+
+/** SSE 误注入在 token 间的字面换行：解析失败时去掉再试 */
+function stripTokenNewlines(str) {
+  if (!str) return ''
+  return String(str).replace(/\r\n/g, '\n').replace(/\n+/g, '')
+}
+
+/** 尽量闭合未完成的 JSON（流式截断；LIFO 关闭括号） */
+function tryCloseIncompleteJson(str) {
+  if (!str || typeof str !== 'string') return ''
+  let s = str.trim()
+  if (!s.startsWith('{') && !s.startsWith('[')) return s
+
+  let inString = false
+  let escape = false
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]
+    if (escape) {
+      escape = false
+      continue
+    }
+    if (inString && c === '\\') {
+      escape = true
+      continue
+    }
+    if (c === '"') inString = !inString
+  }
+  if (inString) s += '"'
+
+  const stack = []
+  inString = false
+  escape = false
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]
+    if (escape) {
+      escape = false
+      continue
+    }
+    if (inString) {
+      if (c === '\\') escape = true
+      else if (c === '"') inString = false
+      continue
+    }
+    if (c === '"') inString = true
+    else if (c === '{') stack.push('{')
+    else if (c === '[') stack.push('[')
+    else if (c === '}') {
+      if (stack.length && stack[stack.length - 1] === '{') stack.pop()
+    } else if (c === ']') {
+      if (stack.length && stack[stack.length - 1] === '[') stack.pop()
+    }
+  }
+  while (stack.length) {
+    const open = stack.pop()
+    s += open === '{' ? '}' : ']'
+  }
+  return s
 }
 
 /** 修复 LLM 在字符串值内输出的未转义双引号，如 （"晋魂"基本陈列） */
@@ -147,8 +254,17 @@ function tryParseJsonString(str) {
   const raw = str.trim()
   if (raw && raw !== extracted) candidates.push(raw)
 
-  for (let i = 0; i < candidates.length; i++) {
-    const candidate = candidates[i]
+  const variants = []
+  candidates.forEach((c) => {
+    variants.push(c)
+    const stripped = stripTokenNewlines(c)
+    if (stripped && stripped !== c) variants.push(stripped)
+    const closed = tryCloseIncompleteJson(stripTokenNewlines(c) || c)
+    if (closed && variants.indexOf(closed) < 0) variants.push(closed)
+  })
+
+  for (let i = 0; i < variants.length; i++) {
+    const candidate = variants[i]
     if (!candidate.startsWith('{') && !candidate.startsWith('[')) continue
     try {
       return JSON.parse(candidate)
@@ -222,9 +338,20 @@ function hasRenderableDay(d) {
   return !!(d && (d.activities.length > 0 || d.meals.length > 0 || d.hotel))
 }
 
+/**
+ * 可展示为「完整行程卡片」：必须有至少一天可渲染内容。
+ * 仅有 summary（流式截断补全出 days:[]）不算完成——否则会提前挂上满意提示 footer。
+ */
 function hasRenderableContent(plan) {
   if (!plan) return false
-  return !!plan.summary || (plan.days || []).some(hasRenderableDay)
+  return (plan.days || []).some(hasRenderableDay)
+}
+
+/** 流式过程中可增量展示：有 summary 或已解析出部分 days */
+function hasStreamingPlanPreview(plan) {
+  if (!plan) return false
+  if ((plan.summary || '').trim()) return true
+  return (plan.days || []).some(hasRenderableDay)
 }
 
 /** 归一化为页面可用的 { summary, days }；骨架 day（仅有 day/date/weather）保留供 UI 占位 */
@@ -312,5 +439,6 @@ module.exports = {
   repairUnescapedQuotes,
   hasPlanShape,
   hasRenderableContent,
+  hasStreamingPlanPreview,
   hasRenderableDay
 }
